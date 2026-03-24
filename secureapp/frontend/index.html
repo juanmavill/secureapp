@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureApp - Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #16213e;
+      padding: 2.5rem;
+      border-radius: 12px;
+      width: 360px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    h1 { color: #e94560; text-align: center; margin-bottom: 0.5rem; }
+    p.subtitle { color: #aaa; text-align: center; font-size: 0.85rem; margin-bottom: 2rem; }
+    label { color: #ccc; font-size: 0.9rem; display: block; margin-bottom: 0.4rem; }
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #0f3460;
+      background: #0f3460;
+      color: #fff;
+      font-size: 1rem;
+      margin-bottom: 1.2rem;
+      outline: none;
+    }
+    input:focus { border-color: #e94560; }
+    button {
+      width: 100%;
+      padding: 0.85rem;
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #c73652; }
+    #mensaje {
+      margin-top: 1.2rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .exito { background: #1a472a; color: #69db7c; display: block !important; }
+    .error  { background: #4a1010; color: #ff6b6b; display: block !important; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>SecureApp</h1>
+    <p class="subtitle">Taller Arquitectura Segura</p>
+
+    <label>Usuario</label>
+    <input type="text" id="usuario" placeholder="tu usuario" />
+
+    <label>Contraseña</label>
+    <input type="password" id="password" placeholder="••••••••" />
+
+    <button onclick="login()">Iniciar sesión</button>
+
+    <div id="mensaje"></div>
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://jmvtdse.duckdns.org";  
+
+    async function login() {
+      const usuario = document.getElementById("usuario").value;
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("mensaje");
+
+      msg.className = "";
+      msg.style.display = "none";
+      msg.textContent = "Conectando...";
+      msg.style.display = "block";
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: usuario, password: password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          msg.textContent = "✅ " + (data.mensaje || "Login exitoso");
+          msg.className = "exito";
+        } else {
+          msg.textContent = "❌ " + (data.mensaje || "Credenciales incorrectas");
+          msg.className = "error";
+        }
+      } catch (err) {
+        msg.textContent = "⚠️ No se pudo conectar al backend: " + err.message;
+        msg.className = "error";
+      }
+    }
+  </script>
+</body>
+</html>
