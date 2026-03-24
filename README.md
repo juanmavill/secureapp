@@ -246,5 +246,5 @@ https://tu-backend.duckdns.org/api/health
 
 ##  Autor
 
-Juan Manuel Vargas  
+Juan Manuel Villegas  
 Escuela Colombiana de Ingeniería Julio Garavito
