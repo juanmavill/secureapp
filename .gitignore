@@ -10,14 +10,14 @@ target/
 .project
 .classpath
 
-# Sistema operativo
+# Operating system
 .DS_Store
 Thumbs.db
 
 # Logs
 *.log
 
-# Material criptografico y secretos: nunca versionar
+# Cryptographic material and secrets: never commit
 *.p12
 *.jks
 *.pem

@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * El hash configurado corresponde a la contrasena "devpassword".
+ * The configured hash belongs to the password "devpassword".
  */
 @SpringBootTest(properties = {
         "app.auth.username=admin",
@@ -50,8 +50,8 @@ class AuthControllerTest {
     }
 
     /**
-     * Usuario inexistente y contrasena incorrecta deben ser indistinguibles desde
-     * fuera: si difirieran, un atacante podria averiguar que usuarios existen.
+     * An unknown user and a wrong password must be indistinguishable from the
+     * outside: if they differed, an attacker could learn which users exist.
      */
     @Test
     void doesNotRevealWhetherTheUserExists() throws Exception {

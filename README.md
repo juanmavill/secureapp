@@ -1,70 +1,70 @@
 # SecureApp
 
-Aplicacion web que cifra el trafico de extremo a extremo en dos saltos: del
-navegador al servidor web, y del servidor web al backend. El segundo salto usa
-**TLS mutuo**, de modo que el backend solo atiende a un cliente que presente un
-certificado que el reconoce.
+**A web application encrypted end to end across two hops: browser to web server,
+and web server to backend.** The second hop uses **mutual TLS**, so the backend
+only serves a client that presents a certificate it recognises.
 
-El objetivo del proyecto es el transporte seguro y la configuracion que lo
-sostiene, no la gestion de usuarios: la autenticacion es deliberadamente minima.
+The subject of this project is secure transport and the configuration that holds
+it together, not user management: authentication is deliberately minimal.
 
 ---
 
-## Arquitectura
+## Architecture
 
 ```mermaid
 flowchart LR
-    B[Navegador] -->|HTTPS| A["Apache HTTP Server<br/>sirve el frontend<br/>y hace de proxy"]
-    A -->|"HTTPS + certificado de cliente<br/>(TLS mutuo)"| S["Spring Boot<br/>API REST"]
+    B[Browser] -->|HTTPS| A["Apache HTTP Server<br/>serves the frontend<br/>and proxies the API"]
+    A -->|"HTTPS + client certificate<br/>(mutual TLS)"| S["Spring Boot<br/>REST API"]
 
-    LE[Certbot] -.->|certificado| A
-    LE -.->|certificado| S
-    A -.->|su certificado publico<br/>vive en el TrustStore| S
+    LE[Certbot] -.->|certificate| A
+    LE -.->|certificate| S
+    A -.->|its public certificate<br/>lives in the TrustStore| S
 ```
 
-| Componente | Tecnologia | Rol |
+| Component | Technology | Role |
 |---|---|---|
-| Frontend | HTML + JavaScript | Cliente asincrono con `fetch` |
-| Servidor web | Apache HTTP Server 2.4 | Sirve estaticos y hace proxy inverso |
-| Backend | Spring Boot 4 + Spring Security | API REST, nunca expuesta directamente |
-| Certificados | Certbot | TLS en ambos saltos |
-| Infraestructura | AWS EC2 | Dos instancias con Elastic IP |
+| Frontend | HTML + JavaScript | Asynchronous client using `fetch` |
+| Web server | Apache HTTP Server 2.4 | Serves static files, reverse proxy |
+| Backend | Spring Boot 4 + Spring Security | REST API, never directly exposed |
+| Certificates | Certbot | TLS on both hops |
+| Infrastructure | AWS EC2 | Two instances with Elastic IPs |
 
 ---
 
-## Medidas de seguridad
+## Security measures
 
-**TLS mutuo exigido, no solicitado.** El backend usa `server.ssl.client-auth=need`.
-La diferencia con `want` es sustantiva: `want` pide el certificado al cliente pero
-**acepta la conexion igualmente si no llega**, con lo cual el control no existe.
-Con `need`, una peticion que no presente un certificado firmado por el TrustStore
-se rechaza durante el handshake, antes de alcanzar la aplicacion.
+**Mutual TLS required, not merely requested.** The backend uses
+`server.ssl.client-auth=need`. The difference from `want` is substantive: `want`
+asks the client for a certificate but **accepts the connection anyway if none
+arrives**, which means the control does not exist. With `need`, a request without
+a certificate signed against the TrustStore is rejected during the handshake,
+before it reaches the application.
 
-**Sin material criptografico ni contrasenas en el repositorio.** El perfil `tls`
-lee rutas y contrasenas del entorno y **no define valores por defecto**: si falta
-una variable la aplicacion no arranca, en lugar de quedarse escuchando sin la
-configuracion que se supone que debe usar. El `.gitignore` excluye `.p12`, `.jks`,
-`.pem`, `.key`, `.crt` y `.cer`.
+**No cryptographic material or passwords in the repository.** The `tls` profile
+reads paths and passwords from the environment and **defines no defaults**: if a
+variable is missing the application refuses to start, rather than listening
+without the configuration it is supposed to be using. `.gitignore` excludes
+`.p12`, `.jks`, `.pem`, `.key`, `.crt` and `.cer`.
 
-**Solo se almacena el hash de la contrasena.** Se guarda un hash BCrypt en
-configuracion, nunca la contrasena. BCrypt incorpora sal y factor de coste.
+**Only the password hash is stored.** A BCrypt hash lives in configuration, never
+the password. BCrypt carries its own salt and cost factor.
 
-**El backend no revela que usuarios existen.** Un usuario inexistente y una
-contrasena incorrecta devuelven el mismo codigo y el mismo cuerpo. Ademas se
-evalua siempre el hash aunque el usuario no coincida: cortocircuitar antes de
-BCrypt haria que la respuesta fuese mas rapida para usuarios inexistentes, y esa
-diferencia de tiempo permitiria enumerarlos.
+**The backend does not reveal which users exist.** An unknown user and a wrong
+password return the same status and the same body. The hash is also always
+evaluated even when the username does not match: short-circuiting before BCrypt
+would make the response faster for unknown users, and that timing difference
+would allow enumerating them.
 
-**CORS con lista explicita.** Los origenes autorizados se configuran por entorno.
-No se usa comodin, que permitiria a cualquier sitio invocar la API desde el
-navegador de un usuario.
+**CORS with an explicit list.** Allowed origins are configured through the
+environment. No wildcard, which would let any site call the API from a signed-in
+user's browser.
 
-**El backend no es alcanzable directamente.** Queda detras del proxy, y el grupo
-de seguridad solo admite trafico procedente de la instancia de Apache.
+**The backend is not directly reachable.** It sits behind the proxy, and its
+security group only admits traffic from the Apache instance.
 
 ---
 
-## Estructura
+## Layout
 
 ```text
 secureapp/
@@ -72,21 +72,21 @@ secureapp/
 │   └── src/main/
 │       ├── java/co/edu/escuelaing/secureapp/
 │       │   ├── SecureappApplication.java
-│       │   ├── AuthController.java      # /api/login y /api/health
-│       │   └── SecurityConfig.java      # cadena de filtros, CORS, BCrypt
+│       │   ├── AuthController.java      # /api/login and /api/health
+│       │   └── SecurityConfig.java      # filter chain, CORS, BCrypt
 │       └── resources/
-│           ├── application.properties       # perfil por defecto: HTTP
-│           └── application-tls.properties   # TLS y TLS mutuo, por entorno
+│           ├── application.properties       # default profile: HTTP
+│           └── application-tls.properties   # TLS and mutual TLS, from the environment
 └── frontend/
     └── index.html
 ```
 
 ---
 
-## Ejecucion local
+## Running it locally
 
-El perfil por defecto arranca en HTTP plano, sin certificados, para poder
-desarrollar y ejecutar las pruebas.
+The default profile starts on plain HTTP, without certificates, so the project
+can be developed and tested locally.
 
 ```bash
 cd secureapp/backend
@@ -101,98 +101,97 @@ curl http://localhost:8080/api/health
 curl -X POST http://localhost:8080/api/login -H "Content-Type: application/json" -d "{\"username\":\"admin\",\"password\":\"devpassword\"}"
 ```
 
-### Credenciales
+### Credentials
 
-La cuenta de demostracion se configura por entorno:
+The demonstration account is configured through the environment:
 
-| Variable | Descripcion | Valor por defecto |
+| Variable | Description | Default |
 |---|---|---|
-| `APP_AUTH_USERNAME` | Usuario | `admin` |
-| `APP_AUTH_PASSWORD_HASH` | Hash BCrypt de la contrasena | hash de `devpassword` |
-| `APP_CORS_ALLOWED_ORIGINS` | Origenes permitidos, separados por coma | `http://localhost:5173,http://localhost:8080` |
+| `APP_AUTH_USERNAME` | Username | `admin` |
+| `APP_AUTH_PASSWORD_HASH` | BCrypt hash of the password | hash of `devpassword` |
+| `APP_CORS_ALLOWED_ORIGINS` | Allowed origins, comma separated | `http://localhost:5173,http://localhost:8080` |
 
-Para generar un hash nuevo basta con `BCryptPasswordEncoder().encode(...)`; el
-resultado se pasa en `APP_AUTH_PASSWORD_HASH`. La contrasena en claro no se
-escribe en ningun archivo del proyecto.
+A new hash comes from `BCryptPasswordEncoder().encode(...)`; the result goes into
+`APP_AUTH_PASSWORD_HASH`. The plaintext password is written to no file in the
+project.
 
 ---
 
-## Pruebas
+## Tests
 
 ```bash
 cd secureapp/backend
 ./mvnw test
 ```
 
-10 pruebas sobre el comportamiento de seguridad: credenciales validas e
-invalidas, ausencia de filtracion sobre que usuarios existen, rechazo de peticion
-sin credenciales, que la respuesta nunca devuelve la contrasena, que las rutas no
-declaradas publicas quedan denegadas, y que CORS acepta el origen configurado y
-rechaza cualquier otro.
+10 tests over the security behaviour: valid and invalid credentials, absence of
+leakage about which users exist, requests without credentials, never echoing the
+password back, denial of paths that are not explicitly public, and CORS accepting
+the configured origin while rejecting any other.
 
 ---
 
-## Despliegue con TLS
+## Deploying with TLS
 
-El perfil `tls` exige estas variables:
+The `tls` profile requires these variables:
 
-| Variable | Descripcion |
+| Variable | Description |
 |---|---|
-| `SSL_KEYSTORE_PATH` | Ruta al PKCS12 con el certificado del backend |
-| `SSL_KEYSTORE_PASSWORD` | Contrasena del KeyStore |
-| `SSL_TRUSTSTORE_PATH` | Ruta al PKCS12 con el certificado publico de Apache |
-| `SSL_TRUSTSTORE_PASSWORD` | Contrasena del TrustStore |
-| `SSL_KEY_ALIAS` | Alias de la clave (por defecto `tomcat`) |
+| `SSL_KEYSTORE_PATH` | Path to the PKCS12 holding the backend certificate |
+| `SSL_KEYSTORE_PASSWORD` | KeyStore password |
+| `SSL_TRUSTSTORE_PATH` | Path to the PKCS12 holding Apache's public certificate |
+| `SSL_TRUSTSTORE_PASSWORD` | TrustStore password |
+| `SSL_KEY_ALIAS` | Key alias (defaults to `tomcat`) |
 
-### Servidor 1 — Apache
+### Server 1 — Apache
 
 ```bash
 sudo yum install -y httpd mod_ssl certbot
-sudo certbot certonly --standalone -d tu-dominio.duckdns.org
+sudo certbot certonly --standalone -d your-domain.duckdns.org
 ```
 
-Generar el PKCS12 que Apache presentara al backend y exportar su certificado
-publico:
+Build the PKCS12 Apache will present to the backend, and export its public
+certificate:
 
 ```bash
-sudo openssl pkcs12 -export -in /etc/letsencrypt/live/tu-dominio.duckdns.org/fullchain.pem -inkey /etc/letsencrypt/live/tu-dominio.duckdns.org/privkey.pem -out /home/ec2-user/apache-keystore.p12 -name apache
+sudo openssl pkcs12 -export -in /etc/letsencrypt/live/your-domain.duckdns.org/fullchain.pem -inkey /etc/letsencrypt/live/your-domain.duckdns.org/privkey.pem -out /home/ec2-user/apache-keystore.p12 -name apache
 ```
 
 ```bash
-sudo openssl x509 -in /etc/letsencrypt/live/tu-dominio.duckdns.org/fullchain.pem -out /home/ec2-user/apache-cert.cer
+sudo openssl x509 -in /etc/letsencrypt/live/your-domain.duckdns.org/fullchain.pem -out /home/ec2-user/apache-cert.cer
 ```
 
-Proxy inverso en `/etc/httpd/conf.d/proxy.conf`:
+Reverse proxy in `/etc/httpd/conf.d/proxy.conf`:
 
 ```apache
 SSLProxyEngine on
 
-# Apache tambien valida el certificado del backend. Con SSLProxyVerify none
-# el cifrado seguiria activo pero no se comprobaria contra quien se habla,
-# que es justo lo que el TLS mutuo pretende evitar.
+# Apache validates the backend certificate too. With SSLProxyVerify none the
+# traffic would still be encrypted but nothing would confirm who is on the
+# other end, which is exactly what mutual TLS is meant to prevent.
 SSLProxyVerify require
 SSLProxyCACertificateFile /etc/pki/tls/certs/backend-ca.pem
 
 SSLProxyMachineCertificateFile /home/ec2-user/apache-keystore.p12
 
-ProxyPass /api https://tu-backend.duckdns.org/api
-ProxyPassReverse /api https://tu-backend.duckdns.org/api
+ProxyPass /api https://your-backend.duckdns.org/api
+ProxyPassReverse /api https://your-backend.duckdns.org/api
 ```
 
-### Servidor 2 — Spring Boot
+### Server 2 — Spring Boot
 
 ```bash
 sudo yum install -y java-17-amazon-corretto
-sudo certbot certonly --standalone -d tu-backend.duckdns.org
+sudo certbot certonly --standalone -d your-backend.duckdns.org
 ```
 
-Importar el certificado publico de Apache al TrustStore:
+Import Apache's public certificate into the TrustStore:
 
 ```bash
 keytool -import -file /home/ec2-user/apache-cert.cer -alias apache -keystore /home/ec2-user/truststore.p12 -storetype PKCS12 -noprompt
 ```
 
-Servicio en `/etc/systemd/system/secureapp.service`:
+Service unit in `/etc/systemd/system/secureapp.service`:
 
 ```ini
 [Unit]
@@ -213,28 +212,28 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-`/etc/secureapp/secrets.env` contiene las variables de la tabla anterior y debe
-tener permisos `600`. El servicio corre con un usuario propio y escucha en 8443:
-enlazar el puerto 443 exigiria privilegios de root para todo el proceso.
+`/etc/secureapp/secrets.env` holds the variables from the table above and should
+be mode `600`. The service runs as its own user and listens on 8443: binding port
+443 would require root privileges for the whole process.
 
 ---
 
-## Limitaciones conocidas
+## Known limitations
 
-- **El login no abre sesion ni emite token.** Valida credenciales y responde, pero
-  no entrega nada que el cliente pueda presentar despues. En consecuencia
-  `anyRequest().authenticated()` no puede satisfacerse y esas rutas responden 403.
-  El proyecto demuestra seguridad de transporte, no gestion de sesiones; anadirla
-  significaria emitir un JWT o abrir sesion de servidor.
-- **Una sola cuenta, definida en configuracion.** No hay registro, ni roles, ni
-  almacen de usuarios.
-- **Sin limite de intentos de login.** Nada impide probar contrasenas de forma
-  repetida. Es la carencia mas relevante de cara a produccion.
-- **CSRF desactivado.** Es coherente mientras no existan cookies de sesion, ya que
-  el navegador no adjunta credenciales automaticamente. Si se anadiera sesion por
-  cookie, habria que reactivarlo.
-- **La renovacion de certificados es manual.** Los certificados caducan cada 90
-  dias y no hay renovacion automatica configurada.
-- **El TLS mutuo solo se ha comprobado en despliegue.** Las pruebas automatizadas
-  corren sobre el perfil HTTP; verificar el handshake mutuo exigiria generar
-  material criptografico de prueba durante el build.
+- **Login neither opens a session nor issues a token.** It validates credentials
+  and answers, but hands back nothing the client can present afterwards. As a
+  result `anyRequest().authenticated()` cannot be satisfied and those paths answer
+  403. The project demonstrates transport security, not session management;
+  adding it would mean issuing a JWT or opening a server session.
+- **A single account, defined in configuration.** No registration, no roles, no
+  user store.
+- **No login attempt limit.** Nothing prevents trying passwords repeatedly. This
+  is the most relevant gap for production use.
+- **CSRF disabled.** Consistent while no session cookies exist, since the browser
+  attaches no credentials automatically. Adding cookie-based sessions would
+  require turning it back on.
+- **Certificate renewal is manual.** Certificates expire every 90 days and no
+  automatic renewal is configured.
+- **Mutual TLS has only been exercised in deployment.** The automated tests run on
+  the HTTP profile; verifying the mutual handshake would require generating test
+  cryptographic material during the build.

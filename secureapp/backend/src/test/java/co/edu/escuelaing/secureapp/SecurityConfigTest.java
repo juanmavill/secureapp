@@ -20,15 +20,14 @@ class SecurityConfigTest {
     private MockMvc mockMvc;
 
     /**
-     * Solo /api/login y /api/health son publicos. Cualquier otra ruta queda
-     * denegada aunque todavia no exista, de modo que anadir un endpoint no lo
-     * expone por olvido.
+     * Only /api/login and /api/health are public. Any other path is denied even if
+     * it does not exist yet, so adding an endpoint does not expose it by omission.
      *
-     * <p>La respuesta es 403 y no 401 porque no hay ningun mecanismo de
-     * autenticacion configurado: /api/login valida credenciales pero no abre
-     * sesion ni emite un token, asi que no existe forma de satisfacer
-     * {@code authenticated()} y Spring no tiene con que desafiar al cliente.
-     * Queda anotado como limitacion en el README.
+     * <p>The response is 403 rather than 401 because no authentication mechanism
+     * is configured: /api/login validates credentials but neither opens a session
+     * nor issues a token, so there is no way to satisfy {@code authenticated()}
+     * and Spring has nothing to challenge the client with. Recorded as a known
+     * limitation in the README.
      */
     @Test
     void deniesEverythingThatIsNotExplicitlyPublic() throws Exception {
@@ -46,8 +45,8 @@ class SecurityConfigTest {
     }
 
     /**
-     * Con el comodin anterior cualquier sitio podia invocar la API desde el
-     * navegador de un usuario autenticado.
+     * With the previous wildcard, any site could call the API from a signed-in
+     * user's browser.
      */
     @Test
     void rejectsAnUnlistedOrigin() throws Exception {

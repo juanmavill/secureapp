@@ -25,9 +25,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // La API no usa cookies de sesion: el navegador no adjunta credenciales
-            // de forma automatica, que es la condicion que hace explotable el CSRF.
-            // Si en el futuro se emitieran cookies, esta linea debe revertirse.
+            // The API uses no session cookies: the browser attaches no credentials
+            // automatically, which is the condition that makes CSRF exploitable.
+            // If cookies are ever issued, this line must be reverted.
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
@@ -40,8 +40,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Lista explicita en lugar de comodin: con "*" cualquier sitio podria
-        // invocar la API desde el navegador de un usuario.
+        // An explicit list rather than a wildcard: with "*" any site could call
+        // the API from a signed-in user's browser.
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST"));
         configuration.setAllowedHeaders(List.of("Content-Type"));

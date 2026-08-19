@@ -39,17 +39,17 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("mensaje", "Usuario y contrasena son obligatorios"));
         }
 
-        // Se comprueban siempre las dos condiciones antes de decidir. Cortocircuitar
-        // en el usuario haria que un usuario inexistente respondiera sin ejecutar
-        // BCrypt, y la diferencia de tiempo revelaria que usuarios existen.
+        // Both conditions are always evaluated before deciding. Short-circuiting on
+        // the username would let an unknown user answer without running BCrypt, and
+        // that timing difference would reveal which usernames exist.
         boolean userMatches = constantTimeEquals(this.username, request.username());
         boolean passwordMatches = passwordEncoder.matches(request.password(), this.passwordHash);
 
         if (userMatches && passwordMatches) {
             return ResponseEntity.ok(Map.of("mensaje", "Bienvenido, " + request.username() + "!"));
         }
-        // Una unica respuesta para usuario inexistente y contrasena incorrecta:
-        // distinguirlas permitiria enumerar cuentas validas.
+        // One single response for an unknown user and a wrong password:
+        // telling them apart would allow enumerating valid accounts.
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("mensaje", "Credenciales incorrectas"));
     }
