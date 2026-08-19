@@ -1,0 +1,28 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Material criptografico y secretos: nunca versionar
+*.p12
+*.jks
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+.env
