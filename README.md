@@ -89,7 +89,7 @@ The default profile starts on plain HTTP, without certificates, so the project
 can be developed and tested locally.
 
 ```bash
-cd secureapp/backend
+cd backend
 ./mvnw spring-boot:run
 ```
 
@@ -120,7 +120,7 @@ project.
 ## Tests
 
 ```bash
-cd secureapp/backend
+cd backend
 ./mvnw test
 ```
 
